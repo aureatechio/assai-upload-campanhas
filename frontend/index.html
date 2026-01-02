@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automação ASSAI - Gerador de CSVs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: linear-gradient(45deg, #FF6B35, #F7931E);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #FF6B35, #F7931E);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(247, 147, 30, 0.4);
+        }
+        .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px;
+            transition: all 0.3s;
+        }
+        .form-select:focus {
+            border-color: #FF6B35;
+            box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .loading {
+            display: none;
+        }
+        .folders-section {
+            display: none;
+            margin-top: 1rem;
+        }
+        .folder-badge {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin: 2px;
+            display: inline-block;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="mb-0">
+                    <i class="fas fa-robot me-2"></i>
+                    Automação ASSAI
+                </h1>
+                <p class="mb-0 mt-2">Gerador de CSVs com URLs do Firebase</p>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label for="campaignSelect" class="form-label">
+                        <i class="fas fa-folder me-2"></i>
+                        Selecione uma Campanha:
+                    </label>
+                    <select class="form-select" id="campaignSelect">
+                        <option value="">Carregando campanhas...</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="regionalToggle">
+                        <label class="form-check-label" for="regionalToggle">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            Campanha Regional (concatenar todos os estados)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="folders-section" id="foldersSection">
+                    <label class="form-label">
+                        <i class="fas fa-folder-open me-2"></i>
+                        Subpastas encontradas:
+                    </label>
+                    <div id="foldersList" class="mb-3"></div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" id="generateBtn" disabled>
+                        <span class="loading">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            Gerando CSVs...
+                        </span>
+                        <span class="normal">
+                            <i class="fas fa-download me-2"></i>
+                            Gerar CSVs
+                        </span>
+                    </button>
+
+                    <button class="btn btn-success" id="generateFeirassaiBtn">
+                        <span class="loading-feirassai" style="display: none;">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            Gerando JSONs FEIRASSAI...
+                        </span>
+                        <span class="normal-feirassai">
+                            <i class="fas fa-magic me-2"></i>
+                            Gerar JSONs FEIRASSAI (Google Drive)
+                        </span>
+                    </button>
+                </div>
+
+                <div id="alertContainer" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const campaignSelect = document.getElementById('campaignSelect');
+        const generateBtn = document.getElementById('generateBtn');
+        const generateFeirassaiBtn = document.getElementById('generateFeirassaiBtn');
+        const alertContainer = document.getElementById('alertContainer');
+        const foldersSection = document.getElementById('foldersSection');
+        const foldersList = document.getElementById('foldersList');
+        const regionalToggle = document.getElementById('regionalToggle');
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+        }
+
+        function setLoading(loading) {
+            const loadingSpan = generateBtn.querySelector('.loading');
+            const normalSpan = generateBtn.querySelector('.normal');
+
+            if (loading) {
+                loadingSpan.style.display = 'inline';
+                normalSpan.style.display = 'none';
+                generateBtn.disabled = true;
+            } else {
+                loadingSpan.style.display = 'none';
+                normalSpan.style.display = 'inline';
+                generateBtn.disabled = !campaignSelect.value;
+            }
+        }
+
+        async function loadCampaigns() {
+            try {
+                const response = await fetch('/api/campaigns');
+                const data = await response.json();
+
+                campaignSelect.innerHTML = '<option value="">Selecione uma campanha...</option>';
+
+                if (data.error) {
+                    showAlert(`Erro: ${data.error}`, 'danger');
+                    return;
+                }
+
+                data.campaigns.forEach(campaign => {
+                    const option = document.createElement('option');
+                    option.value = campaign;
+                    option.textContent = campaign;
+                    campaignSelect.appendChild(option);
+                });
+
+                showAlert(`${data.campaigns.length} campanhas carregadas com sucesso!`, 'success');
+            } catch (error) {
+                showAlert(`Erro ao carregar campanhas: ${error.message}`, 'danger');
+            }
+        }
+
+        async function loadCampaignFolders(campaignName) {
+            try {
+                const response = await fetch(`/api/campaign/${encodeURIComponent(campaignName)}/folders`);
+                const data = await response.json();
+
+                if (data.error) {
+                    showAlert(`Erro: ${data.error}`, 'warning');
+                    foldersSection.style.display = 'none';
+                    return;
+                }
+
+                foldersList.innerHTML = '';
+                data.folders.forEach(folder => {
+                    const badge = document.createElement('span');
+                    badge.className = 'folder-badge';
+                    badge.textContent = folder;
+                    foldersList.appendChild(badge);
+                });
+
+                foldersSection.style.display = 'block';
+            } catch (error) {
+                showAlert(`Erro ao carregar subpastas: ${error.message}`, 'warning');
+                foldersSection.style.display = 'none';
+            }
+        }
+
+        function updateGenerateButton() {
+            const campaignSelected = campaignSelect.value;
+            generateBtn.disabled = !campaignSelected;
+        }
+
+        regionalToggle.addEventListener('change', function() {
+            updateGenerateButton();
+        });
+
+        campaignSelect.addEventListener('change', function() {
+            updateGenerateButton();
+
+            if (this.value) {
+                loadCampaignFolders(this.value);
+            } else {
+                foldersSection.style.display = 'none';
+            }
+        });
+
+        generateBtn.addEventListener('click', async function() {
+            const campaignName = campaignSelect.value;
+            if (!campaignName) return;
+
+            const isRegional = regionalToggle.checked;
+
+            setLoading(true);
+
+            try {
+                const requestData = {
+                    campaign_name: campaignName,
+                    is_regional: isRegional
+                };
+
+                const response = await fetch('/api/generate-csv', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showAlert(`Erro: ${data.error}`, 'danger');
+                } else {
+                    let successMessage = `✅ Sucesso! ${data.files.length} arquivos CSV gerados:<br>`;
+                    successMessage += `<small>Campanha: <strong>${data.campaign_camel}</strong></small><br>`;
+                    successMessage += `<small>Total de arquivos de mídia: <strong>${data.total_files}</strong></small><br>`;
+
+                    if (data.is_regional && data.states) {
+                        successMessage += `<small>Estados incluídos: <strong>${data.states.join(', ')}</strong></small><br>`;
+                    }
+
+                    successMessage += `<small>CSVs gerados: ${data.files.join(', ')}</small>`;
+
+                    showAlert(successMessage, 'success');
+                }
+            } catch (error) {
+                showAlert(`Erro ao gerar CSVs: ${error.message}`, 'danger');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function setLoadingFeirassai(loading) {
+            const loadingSpan = generateFeirassaiBtn.querySelector('.loading-feirassai');
+            const normalSpan = generateFeirassaiBtn.querySelector('.normal-feirassai');
+
+            if (loading) {
+                loadingSpan.style.display = 'inline';
+                normalSpan.style.display = 'none';
+                generateFeirassaiBtn.disabled = true;
+            } else {
+                loadingSpan.style.display = 'none';
+                normalSpan.style.display = 'inline';
+                generateFeirassaiBtn.disabled = false;
+            }
+        }
+
+        generateFeirassaiBtn.addEventListener('click', async function() {
+            setLoadingFeirassai(true);
+
+            try {
+                const response = await fetch('/api/generate-feirassai-json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showAlert(`❌ Erro: ${data.error}`, 'danger');
+                } else {
+                    let successMessage = `🎉 Sucesso! ${data.files.length} arquivos JSON gerados do Google Drive:<br>`;
+                    successMessage += `<small>Total de arquivos de mídia: <strong>${data.total_files}</strong></small><br>`;
+
+                    // Show breakdown by category
+                    const categories = data.categories;
+                    for (const [category, count] of Object.entries(categories)) {
+                        if (count > 0) {
+                            successMessage += `<small>${category}: <strong>${count} arquivos</strong></small><br>`;
+                        }
+                    }
+
+                    successMessage += `<small>JSONs gerados: ${data.files.join(', ')}</small>`;
+
+                    showAlert(successMessage, 'success');
+                }
+            } catch (error) {
+                showAlert(`❌ Erro ao gerar JSONs: ${error.message}`, 'danger');
+            } finally {
+                setLoadingFeirassai(false);
+            }
+        });
+
+        loadCampaigns();
+    </script>
+</body>
+</html>

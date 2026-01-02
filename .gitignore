@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# Virtualenv
+venv/
+.venv/
+backend/venv/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.next/
+out/
+
+# Env / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# IDE
+.claude/
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project outputs (gerados)
+exportados/
+
