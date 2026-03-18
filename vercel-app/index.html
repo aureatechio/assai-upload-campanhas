@@ -95,6 +95,12 @@
         }
         .profile-badge-user { background: #0d6efd; color: white; }
         .profile-badge-admin { background: #dc3545; color: white; }
+        .profile-badge .btn-logout {
+            background: none; border: none; color: white; cursor: pointer;
+            margin-left: 8px; padding: 0 4px; font-size: 0.8rem; opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .profile-badge .btn-logout:hover { opacity: 1; }
 
         /* File count badge */
         .file-count-badge {
@@ -1196,12 +1202,12 @@
 
         if (role === 'admin') {
             profileBadge.className = 'profile-badge profile-badge-admin';
-            profileBadge.innerHTML = '<i class="fas fa-user-shield me-1"></i>Admin';
+            profileBadge.innerHTML = '<i class="fas fa-user-shield me-1"></i>Admin <button class="btn-logout" onclick="logout()" title="Sair"><i class="fas fa-sign-out-alt"></i></button>';
             adminAuthorized = true;
             updateEnvUI();
         } else {
             profileBadge.className = 'profile-badge profile-badge-user';
-            profileBadge.innerHTML = '<i class="fas fa-user me-1"></i>User';
+            profileBadge.innerHTML = '<i class="fas fa-user me-1"></i>User <button class="btn-logout" onclick="logout()" title="Sair"><i class="fas fa-sign-out-alt"></i></button>';
             adminAuthorized = false;
             envToggle.checked = false;
             updateEnvUI();
@@ -1277,6 +1283,32 @@
     $('loginPasswordInput').addEventListener('keydown', e => {
         if (e.key === 'Enter') $('loginAdminBtn').click();
     });
+
+    function logout() {
+        adminAuthorized = false;
+        adminPassword = '';
+        selectedLoginRole = '';
+        appConfig = {};
+        campaignFiles = [];
+        generatedCSVData = {};
+        window._allCampaignFiles = [];
+        envToggle.checked = false;
+        updateEnvUI();
+        appScreen.style.display = 'none';
+        profileBadge.style.display = 'none';
+        loginScreen.style.display = 'flex';
+        $('roleSelection').style.display = 'flex';
+        $('adminLoginForm').style.display = 'none';
+        $('loginPasswordInput').value = '';
+        $('loginPasswordError').style.display = 'none';
+        generateBtn.disabled = true;
+        enviarSection.style.display = 'none';
+        uploadCard.style.display = 'none';
+        $('foldersSection').style.display = 'none';
+        $('variantsSection').style.display = 'none';
+        $('folderNameDisplay').textContent = 'Nenhuma pasta selecionada';
+        alertContainer.innerHTML = '';
+    }
 
     </script>
 </body>
