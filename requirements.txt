@@ -1,1 +1,1 @@
-# No dependencies needed for Vercel serverless functions
+
