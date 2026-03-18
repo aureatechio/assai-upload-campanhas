@@ -583,7 +583,9 @@
             filesByCategory[f.category].push(f);
         }
 
-        const allCampaignNames = selectedStates.map(s => toCamelCase(campName, s));
+        const allCampaignNames = [];
+        if (includeNacional) allCampaignNames.push(toCamelCase(campName));
+        for (const s of selectedStates) allCampaignNames.push(toCamelCase(campName, s));
 
         const csvData = {};
 
