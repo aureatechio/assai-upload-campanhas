@@ -2,3 +2,7 @@ assai-upload-campanhas/
 backend/
 exportados/
 .env
+bubble_upload_csvs.py
+fix_csv_commas.py
+gerar_acelera.py
+upload_supabase_midias.py
