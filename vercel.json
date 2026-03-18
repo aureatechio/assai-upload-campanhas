@@ -1,8 +1,4 @@
 {
-  "buildCommand": "mkdir -p .output && cp frontend/index.html .output/index.html",
-  "outputDirectory": ".output",
-  "installCommand": "echo skip",
-  "framework": null,
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
