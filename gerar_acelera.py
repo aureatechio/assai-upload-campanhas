@@ -1,12 +1,15 @@
 import os
 import csv
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configurações
-CAMPAIGN_BASE_PATH = r"G:\Drives compartilhados\__JOBS 2025\_ASSAI\_ROBO ASSAI\MIDIAS\ANIVERSARIO ACELERA"
-EXPORT_DIR = "exportados"
-BASE_FIREBASE_URL = "https://firebasestorage.googleapis.com/v0/b/geofast-38b6b.appspot.com/o/"
-TOKEN = "7d2e4acc-15fa-46f0-9d3d-7b026db1f96b"
+CAMPAIGN_BASE_PATH = os.getenv('CAMPAIGNS_DIR', r"G:\Drives compartilhados\__JOBS 2025\_ASSAI\_ROBO ASSAI\MIDIAS\ANIVERSARIO ACELERA")
+EXPORT_DIR = os.getenv('EXPORT_DIR', "exportados")
+BASE_FIREBASE_URL = os.getenv('FIREBASE_BASE_URL', "https://firebasestorage.googleapis.com/v0/b/geofast-38b6b.appspot.com/o/")
+TOKEN = os.getenv('FIREBASE_TOKEN', "7d2e4acc-15fa-46f0-9d3d-7b026db1f96b")
 
 def get_firebase_url(bucket_name, filename):
     """Gera URL do Firebase Storage"""

@@ -17,9 +17,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-DEFAULT_PROJECT_URL = "https://xhzgscezaaekbaqrkddu.supabase.co"
-DEFAULT_BUCKET = "assai-midias"
-DEFAULT_CAMPAIGN_PATH = (
+DEFAULT_PROJECT_URL = os.getenv("SUPABASE_PROJECT_URL", "https://xhzgscezaaekbaqrkddu.supabase.co")
+DEFAULT_BUCKET = os.getenv("SUPABASE_BUCKET", "assai-midias")
+DEFAULT_CAMPAIGN_PATH = os.getenv(
+    "CAMPAIGNS_DIR",
     r"G:\Drives compartilhados\__JOBS 2025\_ASSAI\_ROBO ASSAI\MIDIAS\DIA IMBATIVEL 30.01"
 )
 MAX_SIMPLE_UPLOAD = 50 * 1024 * 1024

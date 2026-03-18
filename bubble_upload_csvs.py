@@ -12,8 +12,8 @@ from urllib.request import Request, urlopen
 from dotenv import load_dotenv
 load_dotenv()
 
-DEFAULT_BASE_URL = "https://assai.geofast.ai/version-test/api/1.1/obj"
-AJUSTE_CAMPANHA_ID = "1748539524382x567101974073716860"
+DEFAULT_BASE_URL = os.getenv("BUBBLE_BASE_URL", "https://assai.geofast.ai/version-test/api/1.1/obj")
+AJUSTE_CAMPANHA_ID = os.getenv("AJUSTE_CAMPANHA_ID", "1748539524382x567101974073716860")
 
 TABLE_PATTERNS: Dict[str, str] = {
     "mCabeca": "export_All-mCabecas-*.csv",
