@@ -1,0 +1,5 @@
+assai-upload-campanhas/
+backend/
+exportados/
+*.py
+.env
