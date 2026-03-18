@@ -537,8 +537,10 @@ def generate_csv():
                 files_by_category[category] = []
             files_by_category[category].append(file_info)
 
-        # Collect all campaign names for shared files
+        # Collect all campaign names for shared files (trilha uses all)
         all_campaign_names = []
+        if include_nacional:
+            all_campaign_names.append(to_camel_case(campaign_name))
         if selected_states:
             for state in selected_states:
                 all_campaign_names.append(to_camel_case(campaign_name, state))
