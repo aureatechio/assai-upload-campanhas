@@ -32,6 +32,14 @@ out/
 .idea/
 .vscode/
 
+# Agent/skills cache
+.agent/
+.agents/
+skills-lock.json
+
+# Next.js subproject (kept locally, not deployed)
+assai-upload-campanhas/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -39,3 +47,4 @@ Thumbs.db
 # Project outputs (gerados)
 exportados/
 
+.vercel
