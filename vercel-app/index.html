@@ -107,6 +107,49 @@
             background: #198754; color: white; padding: 2px 8px;
             border-radius: 10px; font-size: 0.75rem; font-weight: 600;
         }
+
+        /* Admin approval section */
+        #approvalSection { display: none; }
+        .approval-card {
+            border: 2px solid #e9ecef; border-radius: 12px;
+            padding: 16px; margin-bottom: 12px; transition: all 0.3s;
+        }
+        .approval-card:hover { border-color: #FF6B35; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .approval-card .campaign-title { font-weight: 700; font-size: 1.1rem; }
+        .approval-card .campaign-meta { font-size: 0.8rem; color: #6c757d; }
+        .approval-card .table-badge {
+            background: #667eea; color: white; padding: 2px 8px;
+            border-radius: 8px; font-size: 0.7rem; margin: 2px; display: inline-block;
+        }
+        .btn-approve {
+            background: linear-gradient(45deg, #198754, #20c997);
+            border: none; color: white; border-radius: 10px;
+            padding: 8px 20px; font-weight: 600; transition: all 0.3s;
+        }
+        .btn-approve:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(25,135,84,0.4); color: white; }
+        .btn-reject {
+            background: #dc3545; border: none; color: white;
+            border-radius: 10px; padding: 8px 16px; font-weight: 600;
+        }
+        .btn-reject:hover { background: #c82333; color: white; }
+        .nav-tabs .nav-link { border-radius: 10px 10px 0 0; font-weight: 600; }
+        .nav-tabs .nav-link.active { color: #FF6B35; border-color: #FF6B35 #FF6B35 #fff; }
+        .approval-progress { display: none; }
+        .status-badge-pending { background: #ffc107; color: #000; }
+        .status-badge-user-approved { background: #0d6efd; color: #fff; }
+        .status-badge-published { background: #198754; color: #fff; }
+        .status-badge-rejected { background: #dc3545; color: #fff; }
+        .btn-user-approve {
+            background: linear-gradient(45deg, #0d6efd, #6610f2);
+            border: none; color: white; border-radius: 10px;
+            padding: 8px 20px; font-weight: 600; transition: all 0.3s;
+        }
+        .btn-user-approve:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,110,253,0.4); color: white; }
+        .btn-reopen {
+            background: #6c757d; border: none; color: white;
+            border-radius: 10px; padding: 8px 16px; font-weight: 600;
+        }
+        .btn-reopen:hover { background: #5a6268; color: white; }
     </style>
 </head>
 <body>
@@ -164,6 +207,28 @@
                 <p class="mb-0 mt-2">Upload de Campanhas - Vercel</p>
             </div>
             <div class="card-body p-4">
+
+                <!-- Tabs: Upload / Aprovacoes (admin only) -->
+                <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="uploadTab" data-bs-toggle="tab" data-bs-target="#uploadPane" type="button">
+                            <i class="fas fa-cloud-upload-alt me-1"></i>Upload
+                        </button>
+                    </li>
+                    <li class="nav-item" id="myCampaignsTabItem" style="display: none;">
+                        <button class="nav-link" id="myCampaignsTab" data-bs-toggle="tab" data-bs-target="#myCampaignsPane" type="button">
+                            <i class="fas fa-list me-1"></i>Minhas Campanhas <span class="badge bg-info text-dark" id="myCampaignsCount" style="display: none;">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" id="approvalTabItem" style="display: none;">
+                        <button class="nav-link" id="approvalTab" data-bs-toggle="tab" data-bs-target="#approvalPane" type="button">
+                            <i class="fas fa-check-circle me-1"></i>Aprovacoes <span class="badge bg-warning text-dark" id="pendingCount" style="display: none;">0</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                <div class="tab-pane fade show active" id="uploadPane" role="tabpanel">
 
                 <!-- Step 1: Select campaign folder -->
                 <div class="mb-3">
@@ -243,6 +308,54 @@
                         </div>
                     </div>
                 </div>
+
+                </div><!-- end uploadPane -->
+
+                <!-- My Campaigns Pane (user + admin) -->
+                <div class="tab-pane fade" id="myCampaignsPane" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Minhas Campanhas</h5>
+                        <button class="btn btn-outline-secondary btn-sm" id="refreshMyCampaignsBtn" style="border-radius: 10px;">
+                            <i class="fas fa-sync-alt me-1"></i>Atualizar
+                        </button>
+                    </div>
+                    <div id="myCampaignsList">
+                        <p class="text-muted text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Carregando...</p>
+                    </div>
+                </div><!-- end myCampaignsPane -->
+
+                <!-- Approval Pane (admin only) -->
+                <div class="tab-pane fade" id="approvalPane" role="tabpanel">
+                    <div id="approvalSection">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Campanhas Pendentes</h5>
+                            <button class="btn btn-outline-secondary btn-sm" id="refreshApprovalsBtn" style="border-radius: 10px;">
+                                <i class="fas fa-sync-alt me-1"></i>Atualizar
+                            </button>
+                        </div>
+                        <div id="approvalList">
+                            <p class="text-muted text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Carregando...</p>
+                        </div>
+
+                        <!-- Approval progress -->
+                        <div class="card mt-3 approval-progress" id="approvalProgressCard">
+                            <div class="card-body">
+                                <div class="stage-label" id="approvalStageLabel">
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>Enviando para Bubble PROD...
+                                </div>
+                                <div id="approvalCurrentItem" class="text-muted small mb-1"></div>
+                                <div class="progress mb-2" style="height: 18px;">
+                                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                                         id="approvalProgressBar" role="progressbar" style="width: 0%;">0%</div>
+                                </div>
+                                <div id="approvalResultInfo" class="small"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- end approvalPane -->
+
+                </div><!-- end tab-content -->
+
             </div>
         </div>
     </div>
@@ -1049,6 +1162,21 @@
     enviarBtn.addEventListener('click', async function() {
         const allFiles = window._allCampaignFiles || [];
         if (!allFiles.length) return;
+
+        const env = getEnv();
+
+        // Block re-upload if this slug was already user_approved (only for TEST)
+        if (env === 'test') {
+            try {
+                const checkRes = await fetch('/api/campaigns?status=user_approved');
+                const approved = await checkRes.json();
+                if (Array.isArray(approved) && approved.some(r => r.campaign_slug === campaignSlug)) {
+                    showAlert(`<i class="fas fa-lock me-1"></i>Campanha "<strong>${campaignSlug}</strong>" ja foi aprovada por voce e esta aguardando aprovacao do admin. Nao e possivel re-enviar.<br><small>Para liberar, va em "Minhas Campanhas" e clique "Reabrir para Teste".</small>`, 'danger');
+                    return;
+                }
+            } catch (e) { /* ignore check errors, proceed */ }
+        }
+
         enviarBtn.disabled = true;
 
         // Deduplicate by webkitRelativePath
@@ -1121,7 +1249,6 @@
         supabaseStageLabel.innerHTML = '<i class="fas fa-check-circle me-1"></i>Etapa 1/2 - Supabase concluido';
 
         // Stage 2: Bubble uploads
-        const env = getEnv();
         const envLabel = env === 'prod' ? 'PROD' : 'TEST';
 
         bubbleStage.style.display = 'block';
@@ -1188,9 +1315,399 @@
         const envDone = env === 'prod' ? 'PROD' : 'TEST';
         let msg = `Tudo concluido! Supabase + Bubble ${envDone} OK. ${totalSuccess}/${totalRecords} registros enviados`;
         if (totalFailed > 0) msg += ` (${totalFailed} falhas)`;
+
+        // Save payloads to Supabase DB (only on TEST env with no failures)
+        if (env === 'test' && totalFailed === 0) {
+            uploadCurrentFile.textContent = 'Salvando registros para aprovacao...';
+            await saveCampaignPayloads(generatedCSVData, campaignSlug, campaignName);
+            msg += '<br><small><i class="fas fa-clipboard-check me-1"></i>Registros salvos. Va em <strong>"Minhas Campanhas"</strong> para aprovar a versao quando estiver pronto.</small>';
+            // Refresh "Minhas Campanhas" tab count
+            loadMyCampaigns();
+        }
+
         showAlert(msg, totalFailed > 0 ? 'warning' : 'success');
         enviarBtn.disabled = false;
     });
+
+    // ── Campaign approval: save payloads to Supabase DB ───────────────
+    async function saveCampaignPayloads(csvData, campaignSlugValue, campaignNameValue) {
+        const records = [];
+        for (const [csvFilename, { table, rows }] of Object.entries(csvData)) {
+            for (const row of rows) {
+                const payload = applyOverrides(table, row);
+                records.push({
+                    campaign_slug: campaignSlugValue,
+                    campaign_name: campaignNameValue,
+                    table_name: table,
+                    payload,
+                    status: 'pending',
+                });
+            }
+        }
+
+        if (records.length === 0) return;
+
+        try {
+            // Delete old pending records for this campaign (keeps only latest version)
+            await fetch('/api/campaigns', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Admin-Password': adminPassword || 'user-upload',
+                },
+                body: JSON.stringify({ campaign_slug: campaignSlugValue, status_filter: 'pending' }),
+            });
+
+            // Insert new records
+            const res = await fetch('/api/campaigns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ records }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                console.error('Erro ao salvar payloads:', data.error);
+            }
+        } catch (err) {
+            console.error('Erro ao salvar payloads:', err);
+        }
+    }
+
+    // ── Load user's campaigns (Minhas Campanhas) ─────────────────────
+    async function loadMyCampaigns() {
+        const list = $('myCampaignsList');
+        const countBadge = $('myCampaignsCount');
+
+        try {
+            // Fetch pending + user_approved campaigns
+            const [resPending, resApproved] = await Promise.all([
+                fetch('/api/campaigns?status=pending'),
+                fetch('/api/campaigns?status=user_approved'),
+            ]);
+            const dataPending = await resPending.json();
+            const dataApproved = await resApproved.json();
+            const data = [...(Array.isArray(dataPending) ? dataPending : []), ...(Array.isArray(dataApproved) ? dataApproved : [])];
+
+            if (data.length === 0) {
+                list.innerHTML = '<p class="text-muted text-center py-4"><i class="fas fa-inbox me-2"></i>Nenhuma campanha em andamento.</p>';
+                countBadge.style.display = 'none';
+                return;
+            }
+
+            // Group by campaign_slug
+            const grouped = {};
+            for (const row of data) {
+                if (!grouped[row.campaign_slug]) {
+                    grouped[row.campaign_slug] = {
+                        campaign_name: row.campaign_name,
+                        campaign_slug: row.campaign_slug,
+                        status: row.status,
+                        created_at: row.created_at,
+                        user_approved_at: row.user_approved_at,
+                        records: [],
+                        tables: new Set(),
+                    };
+                }
+                grouped[row.campaign_slug].records.push(row);
+                grouped[row.campaign_slug].tables.add(row.table_name);
+            }
+
+            const slugs = Object.keys(grouped);
+            const pendingSlugs = slugs.filter(s => grouped[s].status === 'pending');
+            countBadge.textContent = pendingSlugs.length || slugs.length;
+            countBadge.style.display = 'inline';
+
+            let html = '';
+            for (const slug of slugs) {
+                const camp = grouped[slug];
+                const dateStr = new Date(camp.created_at).toLocaleString('pt-BR');
+                const tablesHtml = [...camp.tables].map(t => `<span class="table-badge">${t}</span>`).join(' ');
+                const isPending = camp.status === 'pending';
+                const isUserApproved = camp.status === 'user_approved';
+
+                const statusLabel = isPending
+                    ? '<span class="badge status-badge-pending">Em teste</span>'
+                    : '<span class="badge status-badge-user-approved">Versao aprovada</span>';
+
+                let buttonsHtml = '';
+                if (isPending) {
+                    buttonsHtml = `
+                        <button class="btn btn-user-approve btn-sm" onclick="userApproveCampaign('${slug}')">
+                            <i class="fas fa-check-double me-1"></i>Aprovar Versao
+                        </button>`;
+                } else if (isUserApproved) {
+                    const approvedDate = camp.user_approved_at ? new Date(camp.user_approved_at).toLocaleString('pt-BR') : '';
+                    buttonsHtml = `
+                        <small class="text-muted d-block mb-1">Aprovada em ${approvedDate}</small>
+                        <button class="btn btn-reopen btn-sm" onclick="reopenCampaign('${slug}')">
+                            <i class="fas fa-undo me-1"></i>Reabrir para Teste
+                        </button>`;
+                }
+
+                html += `
+                <div class="approval-card" id="mycamp-${slug}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="campaign-title">${camp.campaign_name} ${statusLabel}</div>
+                            <div class="campaign-meta">Slug: <strong>${slug}</strong> | ${camp.records.length} registros | ${dateStr}</div>
+                            <div class="mt-1">${tablesHtml}</div>
+                        </div>
+                        <div class="text-end">
+                            ${buttonsHtml}
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            list.innerHTML = html;
+        } catch (err) {
+            list.innerHTML = `<p class="text-danger text-center py-4"><i class="fas fa-exclamation-triangle me-2"></i>Erro ao carregar: ${err.message}</p>`;
+            countBadge.style.display = 'none';
+        }
+    }
+
+    // ── User approve campaign version ───────────────────────────────
+    async function userApproveCampaign(slug) {
+        if (!confirm(`Aprovar versao da campanha "${slug}"?\n\nApos aprovacao, voce nao podera re-enviar esta campanha ate que o admin processe ou voce reabra para teste.`)) return;
+
+        try {
+            const res = await fetch('/api/campaigns', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaign_slug: slug, status: 'user_approved' }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Erro ao aprovar');
+
+            showAlert(`<i class="fas fa-check-double me-1"></i>Versao da campanha "<strong>${slug}</strong>" aprovada! Aguardando aprovacao do admin para PROD.`, 'success');
+            await loadMyCampaigns();
+        } catch (err) {
+            showAlert('Erro ao aprovar versao: ' + err.message, 'danger');
+        }
+    }
+
+    // ── Reopen campaign for testing ─────────────────────────────────
+    async function reopenCampaign(slug) {
+        if (!confirm(`Reabrir campanha "${slug}" para testes?\n\nIsso permitira re-enviar arquivos e o admin nao vera mais esta campanha ate voce aprovar novamente.`)) return;
+
+        try {
+            const res = await fetch('/api/campaigns', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaign_slug: slug, status: 'pending' }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Erro ao reabrir');
+
+            showAlert(`Campanha "<strong>${slug}</strong>" reaberta para testes.`, 'info');
+            await loadMyCampaigns();
+        } catch (err) {
+            showAlert('Erro ao reabrir: ' + err.message, 'danger');
+        }
+    }
+
+    // ── Load pending campaigns for admin approval ───────────────────
+    // Admin only sees campaigns the user has finalized (user_approved)
+    async function loadPendingCampaigns() {
+        const approvalList = $('approvalList');
+        const pendingCountBadge = $('pendingCount');
+
+        try {
+            const res = await fetch('/api/campaigns?status=user_approved');
+            const data = await res.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                approvalList.innerHTML = '<p class="text-muted text-center py-4"><i class="fas fa-check-circle me-2"></i>Nenhuma campanha aguardando aprovacao.</p>';
+                pendingCountBadge.style.display = 'none';
+                return;
+            }
+
+            // Group by campaign_slug
+            const grouped = {};
+            for (const row of data) {
+                if (!grouped[row.campaign_slug]) {
+                    grouped[row.campaign_slug] = {
+                        campaign_name: row.campaign_name,
+                        campaign_slug: row.campaign_slug,
+                        created_at: row.created_at,
+                        user_approved_at: row.user_approved_at,
+                        records: [],
+                        tables: new Set(),
+                    };
+                }
+                grouped[row.campaign_slug].records.push(row);
+                grouped[row.campaign_slug].tables.add(row.table_name);
+            }
+
+            const slugs = Object.keys(grouped);
+            pendingCountBadge.textContent = slugs.length;
+            pendingCountBadge.style.display = 'inline';
+
+            let html = '';
+            for (const slug of slugs) {
+                const camp = grouped[slug];
+                const dateStr = new Date(camp.created_at).toLocaleString('pt-BR');
+                const approvedStr = camp.user_approved_at ? new Date(camp.user_approved_at).toLocaleString('pt-BR') : '';
+                const tablesHtml = [...camp.tables].map(t => `<span class="table-badge">${t}</span>`).join(' ');
+
+                html += `
+                <div class="approval-card" id="approval-${slug}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="campaign-title">${camp.campaign_name} <span class="badge status-badge-user-approved">Aprovada pelo User</span></div>
+                            <div class="campaign-meta">Slug: <strong>${slug}</strong> | ${camp.records.length} registros</div>
+                            <div class="campaign-meta">Enviado: ${dateStr}${approvedStr ? ' | Aprovado pelo user: ' + approvedStr : ''}</div>
+                            <div class="mt-1">${tablesHtml}</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-approve btn-sm" onclick="approveCampaign('${slug}')">
+                                <i class="fas fa-check me-1"></i>Publicar PROD
+                            </button>
+                            <button class="btn btn-reject btn-sm" onclick="rejectCampaign('${slug}')">
+                                <i class="fas fa-times me-1"></i>Rejeitar
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            approvalList.innerHTML = html;
+        } catch (err) {
+            approvalList.innerHTML = `<p class="text-danger text-center py-4"><i class="fas fa-exclamation-triangle me-2"></i>Erro ao carregar: ${err.message}</p>`;
+            pendingCountBadge.style.display = 'none';
+        }
+    }
+
+    // ── Approve campaign: send payloads to Bubble PROD ──────────────
+    async function approveCampaign(slug) {
+        if (!confirm(`Aprovar campanha "${slug}" e enviar para Bubble PROD?`)) return;
+
+        const progressCard = $('approvalProgressCard');
+        const progressBar = $('approvalProgressBar');
+        const currentItem = $('approvalCurrentItem');
+        const stageLabel = $('approvalStageLabel');
+        const resultInfo = $('approvalResultInfo');
+
+        progressCard.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+        progressBar.classList.add('progress-bar-animated');
+        stageLabel.innerHTML = '<i class="fas fa-cloud-upload-alt me-1"></i>Enviando para Bubble PROD...';
+        stageLabel.className = 'stage-label';
+        currentItem.textContent = 'Carregando registros...';
+        resultInfo.innerHTML = '';
+
+        // Disable approval buttons during process
+        const card = $(`approval-${slug}`);
+        if (card) card.querySelectorAll('button').forEach(b => b.disabled = true);
+
+        try {
+            // Fetch user_approved records for this campaign
+            const res = await fetch(`/api/campaigns?status=user_approved`);
+            const allRecords = await res.json();
+            const records = allRecords.filter(r => r.campaign_slug === slug);
+
+            if (records.length === 0) {
+                showAlert('Nenhum registro aprovado encontrado para esta campanha.', 'warning');
+                progressCard.style.display = 'none';
+                return;
+            }
+
+            let success = 0, failed = 0;
+            const errors = [];
+
+            for (let i = 0; i < records.length; i++) {
+                const rec = records[i];
+                currentItem.textContent = `Enviando: ${rec.table_name} (${i + 1}/${records.length})`;
+
+                try {
+                    await sendToBubble(rec.table_name, rec.payload, 'prod');
+                    success++;
+                } catch (e) {
+                    failed++;
+                    if (errors.length < 10) errors.push(`${rec.table_name}: ${e.message}`);
+                }
+
+                const pct = Math.round(((i + 1) / records.length) * 100);
+                progressBar.style.width = pct + '%';
+                progressBar.textContent = pct + '%';
+
+                let info = `<span class="text-success">${success} enviados</span>`;
+                if (failed > 0) info += ` | <span class="text-danger">${failed} falhas</span>`;
+                resultInfo.innerHTML = info;
+
+                // Rate limit delay
+                if (i < records.length - 1) {
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.style.width = '100%';
+            progressBar.textContent = '100%';
+
+            if (failed > 0) {
+                stageLabel.innerHTML = '<i class="fas fa-exclamation-triangle me-1 text-warning"></i>Concluido com falhas';
+                currentItem.textContent = `${success} enviados, ${failed} falhas`;
+                if (errors.length > 0) {
+                    resultInfo.innerHTML += `<div class="text-danger small mt-1">${errors.slice(0, 5).join('<br>')}</div>`;
+                }
+                showAlert(`Aprovacao parcial: ${success}/${records.length} registros enviados ao Bubble PROD.`, 'warning');
+            } else {
+                // Update status to published
+                await fetch('/api/campaigns', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Password': adminPassword,
+                    },
+                    body: JSON.stringify({ campaign_slug: slug, status: 'published' }),
+                });
+
+                stageLabel.className = 'stage-label stage-done';
+                stageLabel.innerHTML = '<i class="fas fa-check-circle me-1"></i>Aprovacao concluida!';
+                currentItem.textContent = `${success} registros enviados ao Bubble PROD com sucesso!`;
+                showAlert(`Campanha "${slug}" aprovada e publicada no Bubble PROD! (${success} registros)`, 'success');
+
+                // Refresh list
+                await loadPendingCampaigns();
+            }
+        } catch (err) {
+            stageLabel.innerHTML = '<i class="fas fa-times-circle me-1 text-danger"></i>Erro na aprovacao';
+            currentItem.textContent = err.message;
+            showAlert('Erro ao aprovar campanha: ' + err.message, 'danger');
+        }
+    }
+
+    // ── Reject campaign ─────────────────────────────────────────────
+    async function rejectCampaign(slug) {
+        if (!confirm(`Rejeitar campanha "${slug}"? Os registros pendentes serao marcados como rejeitados.`)) return;
+
+        try {
+            const res = await fetch('/api/campaigns', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Admin-Password': adminPassword,
+                },
+                body: JSON.stringify({ campaign_slug: slug, status: 'rejected' }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Erro ao rejeitar');
+
+            showAlert(`Campanha "${slug}" rejeitada.`, 'info');
+            await loadPendingCampaigns();
+        } catch (err) {
+            showAlert('Erro ao rejeitar: ' + err.message, 'danger');
+        }
+    }
+
+    // ── Tab events ────────────────────────────────────────────────────
+    $('refreshApprovalsBtn').addEventListener('click', loadPendingCampaigns);
+    $('refreshMyCampaignsBtn').addEventListener('click', loadMyCampaigns);
+
+    $('approvalTab').addEventListener('shown.bs.tab', loadPendingCampaigns);
+    $('myCampaignsTab').addEventListener('shown.bs.tab', loadMyCampaigns);
 
     // ── Login Screen ──────────────────────────────────────────────────
     const loginScreen = $('loginScreen');
@@ -1202,11 +1719,17 @@
         appScreen.style.display = 'block';
         profileBadge.style.display = 'block';
 
+        // Both roles see "Minhas Campanhas"
+        $('myCampaignsTabItem').style.display = 'block';
+
         if (role === 'admin') {
             profileBadge.className = 'profile-badge profile-badge-admin';
             profileBadge.innerHTML = '<i class="fas fa-user-shield me-1"></i>Admin <button class="btn-logout" onclick="logout()" title="Sair"><i class="fas fa-sign-out-alt"></i></button>';
             adminAuthorized = true;
+            $('approvalTabItem').style.display = 'block';
+            $('approvalSection').style.display = 'block';
             updateEnvUI();
+            loadPendingCampaigns();
         } else {
             profileBadge.className = 'profile-badge profile-badge-user';
             profileBadge.innerHTML = '<i class="fas fa-user me-1"></i>User <button class="btn-logout" onclick="logout()" title="Sair"><i class="fas fa-sign-out-alt"></i></button>';
@@ -1214,6 +1737,8 @@
             envToggle.checked = false;
             updateEnvUI();
         }
+
+        loadMyCampaigns();
 
         // Load config
         loadConfig();
@@ -1306,6 +1831,13 @@
         generateBtn.disabled = true;
         enviarSection.style.display = 'none';
         uploadCard.style.display = 'none';
+        $('myCampaignsTabItem').style.display = 'none';
+        $('approvalTabItem').style.display = 'none';
+        $('approvalSection').style.display = 'none';
+        $('approvalProgressCard').style.display = 'none';
+        // Reset to upload tab
+        const uploadTabEl = $('uploadTab');
+        if (uploadTabEl) new bootstrap.Tab(uploadTabEl).show();
         $('foldersSection').style.display = 'none';
         $('variantsSection').style.display = 'none';
         $('folderNameDisplay').textContent = 'Nenhuma pasta selecionada';
