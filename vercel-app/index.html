@@ -1147,11 +1147,41 @@
             // Also store allCampaignFiles for Supabase upload
             window._allCampaignFiles = allCampaignFiles;
 
+            // Count files per category for diagnostics
+            const categoryCounts = {};
+            for (const f of allCampaignFiles) {
+                categoryCounts[f.category] = (categoryCounts[f.category] || 0) + 1;
+            }
+
+            // Detect which folders matched which category
+            const allCandidates = [
+                { label: 'Cabeca', candidates: CABECA_NAMES },
+                { label: 'BG', candidates: BG_NAMES },
+                { label: 'Assinatura', candidates: ASSINATURA_NAMES },
+                { label: 'Trilha', candidates: TRILHA_NAMES },
+                { label: 'Thumb', candidates: THUMB_NAMES },
+            ];
+            const detectedFolders = new Set();
+            campaignFiles.forEach(f => {
+                const parts = f.webkitRelativePath.split('/');
+                if (parts.length >= 3) detectedFolders.add(parts[1]);
+            });
+            const unmatchedFolders = [...detectedFolders].filter(name => {
+                const upper = name.toUpperCase();
+                return !allCandidates.some(c => c.candidates.map(n => n.toUpperCase()).includes(upper));
+            });
+
             const filenames = Object.keys(result.csvData);
             let msg = `Sucesso! ${filenames.length} CSVs gerados:<br>`;
             msg += `<small>Campanha: <strong>${campaignSlug}</strong></small><br>`;
             msg += `<small>Midias: <strong>${result.totalFiles}</strong></small><br>`;
             msg += `<small>Variantes: <strong>${selectedVariants.join(', ').toUpperCase()}</strong></small><br>`;
+            const catLabels = { abertura: 'Cabeca', bg: 'BG', assinatura: 'Assinatura', trilha: 'Trilha', thumb: 'Thumb' };
+            const catParts = Object.entries(catLabels).map(([k, label]) => `${label}: ${categoryCounts[k] || 0}`);
+            msg += `<small>Detalhamento: ${catParts.join(' | ')}</small><br>`;
+            if (unmatchedFolders.length > 0) {
+                msg += `<small class="text-warning">Pastas nao reconhecidas: <strong>${unmatchedFolders.join(', ')}</strong></small><br>`;
+            }
             msg += `<small>Arquivos: ${filenames.join(', ')}</small>`;
             showAlert(msg, 'success');
 
