@@ -534,20 +534,25 @@
     }
 
     // ── Folder scanning (browser File API) ────────────────────────────
+    // Normalize folder names: trim, NFC normalize, strip zero-width chars
+    function normalizeFolderName(name) {
+        return name.normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toUpperCase();
+    }
+
     function findFolderFiles(allFiles, candidates) {
         // Returns files whose relative path starts with one of the candidate folder names
-        const upper = candidates.map(c => c.toUpperCase());
+        const upper = candidates.map(c => normalizeFolderName(c));
         return allFiles.filter(f => {
             const parts = f.webkitRelativePath.split('/');
             // parts[0] = campaign root, parts[1] = subfolder name
-            return parts.length >= 3 && upper.includes(parts[1].toUpperCase());
+            return parts.length >= 3 && upper.includes(normalizeFolderName(parts[1]));
         });
     }
 
     function getFolderName(file, candidates) {
         const parts = file.webkitRelativePath.split('/');
-        const upper = candidates.map(c => c.toUpperCase());
-        if (parts.length >= 3 && upper.includes(parts[1].toUpperCase())) {
+        const upper = candidates.map(c => normalizeFolderName(c));
+        if (parts.length >= 3 && upper.includes(normalizeFolderName(parts[1]))) {
             return parts[1];
         }
         return null;
@@ -1167,8 +1172,8 @@
                 if (parts.length >= 3) detectedFolders.add(parts[1]);
             });
             const unmatchedFolders = [...detectedFolders].filter(name => {
-                const upper = name.toUpperCase();
-                return !allCandidates.some(c => c.candidates.map(n => n.toUpperCase()).includes(upper));
+                const norm = normalizeFolderName(name);
+                return !allCandidates.some(c => c.candidates.map(n => normalizeFolderName(n)).includes(norm));
             });
 
             const filenames = Object.keys(result.csvData);
@@ -1180,7 +1185,8 @@
             const catParts = Object.entries(catLabels).map(([k, label]) => `${label}: ${categoryCounts[k] || 0}`);
             msg += `<small>Detalhamento: ${catParts.join(' | ')}</small><br>`;
             if (unmatchedFolders.length > 0) {
-                msg += `<small class="text-warning">Pastas nao reconhecidas: <strong>${unmatchedFolders.join(', ')}</strong></small><br>`;
+                const folderDebug = unmatchedFolders.map(n => `${n} (${n.length} chars)`).join(', ');
+                msg += `<small class="text-warning">Pastas nao reconhecidas: <strong>${folderDebug}</strong></small><br>`;
             }
             msg += `<small>Arquivos: ${filenames.join(', ')}</small>`;
             showAlert(msg, 'success');
