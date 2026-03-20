@@ -715,8 +715,6 @@
             const key = (f.state || '').toUpperCase();
             thumbUrls[key] = f.url;
         }
-        console.log('[THUMB DEBUG] filesByCategory.thumb:', filesByCategory.thumb || []);
-        console.log('[THUMB DEBUG] thumbUrls:', JSON.stringify(thumbUrls));
 
         for (const [category, files] of Object.entries(filesByCategory)) {
             if (category === 'thumb' || !files.length) continue;
@@ -783,7 +781,7 @@
         const campanhasRows = [];
         if (includeNacional) {
             const thumbUrl = findThumbUrl('NACIONAL');
-            console.log('[THUMB DEBUG] Nacional imagem:', thumbUrl);
+
             campanhasRows.push({
                 ajusteCampanha: 'acelera',
                 ativo: 'sim',
@@ -803,7 +801,7 @@
             const stateDisplay = state.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
             const campNameCamel = toCamelCase(campName, state);
             const stateThumbUrl = findThumbUrl(state);
-            console.log(`[THUMB DEBUG] State ${state} imagem:`, stateThumbUrl);
+
             campanhasRows.push({
                 ajusteCampanha: 'acelera',
                 ativo: 'sim',
@@ -1150,12 +1148,9 @@
             window._allCampaignFiles = allCampaignFiles;
 
             const filenames = Object.keys(result.csvData);
-            const thumbCount = allCampaignFiles.filter(f => f.category === 'thumb').length;
-            const thumbUrlEntries = Object.entries(result.thumbUrls || {});
             let msg = `Sucesso! ${filenames.length} CSVs gerados:<br>`;
             msg += `<small>Campanha: <strong>${campaignSlug}</strong></small><br>`;
             msg += `<small>Midias: <strong>${result.totalFiles}</strong></small><br>`;
-            msg += `<small>Thumbs encontradas: <strong>${thumbCount}</strong> | URLs: <strong>${thumbUrlEntries.length > 0 ? thumbUrlEntries.map(([k,v]) => `${k||'(raiz)'}=${v.substring(v.lastIndexOf('/')+1)}`).join(', ') : 'NENHUMA'}</strong></small><br>`;
             msg += `<small>Variantes: <strong>${selectedVariants.join(', ').toUpperCase()}</strong></small><br>`;
             msg += `<small>Arquivos: ${filenames.join(', ')}</small>`;
             showAlert(msg, 'success');
@@ -1294,9 +1289,7 @@
 
             for (let j = 0; j < rows.length; j++) {
                 const payload = applyOverrides(table, rows[j]);
-                if (table === 'formCampanha') {
-                    console.log(`[BUBBLE DEBUG] formCampanha payload row ${j+1}:`, JSON.stringify(payload));
-                }
+
                 try {
                     await sendToBubble(table, payload, env);
                     fileSuccess++;
