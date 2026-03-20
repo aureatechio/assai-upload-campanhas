@@ -387,11 +387,12 @@
     <script>
     // ── Constants ──────────────────────────────────────────────────────
     const MEDIA_EXTS = ['.mp4', '.mp3', '.wav'];
+    const BG_EXTS = ['.mp4', '.png', '.jpg', '.jpeg'];
     const IMAGE_EXTS = ['.png', '.jpg', '.jpeg'];
     const CABECA_NAMES = ['CABECA', 'CABEÇA', 'CABECAS', 'CABEÇAS'];
-    const ASSINATURA_NAMES = ['ASSINATURA', 'ASSINATURAS'];
-    const BG_NAMES = ['BG'];
-    const TRILHA_NAMES = ['TRILHA'];
+    const ASSINATURA_NAMES = ['ASSINATURA', 'ASSINATURAS', 'ENCERRAMENTO'];
+    const BG_NAMES = ['BG', 'BACKGROUND', 'BG OFERTAS'];
+    const TRILHA_NAMES = ['TRILHA', 'TRILHAS'];
     const THUMB_NAMES = ['THUMB', 'THUMBS'];
 
     const SUPABASE_CATEGORY_MAP = {
@@ -524,6 +525,10 @@
         return MEDIA_EXTS.includes(getFileExtension(name));
     }
 
+    function isBgFile(name) {
+        return BG_EXTS.includes(getFileExtension(name));
+    }
+
     function isImageFile(name) {
         return IMAGE_EXTS.includes(getFileExtension(name));
     }
@@ -601,9 +606,10 @@
                 }
             } else {
                 // Only files in the state subfolder
+                const fileCheck = category === 'bg' ? isBgFile : isMediaFile;
                 for (const f of folderFiles) {
                     const fileState = getSubfolderState(f, candidates);
-                    if (fileState && fileState === state.toUpperCase() && isMediaFile(f.name)) {
+                    if (fileState && fileState === state.toUpperCase() && fileCheck(f.name)) {
                         results.push({
                             campaign_name: campNameCamel,
                             category, bucket, filename: f.name,
@@ -650,8 +656,9 @@
 
         for (const { candidates, bucket, category } of bucketFolders) {
             const folderFiles = findFolderFiles(allFiles, candidates);
+            const fileCheck = category === 'bg' ? isBgFile : isMediaFile;
             for (const f of folderFiles) {
-                if (isMediaFile(f.name)) {
+                if (fileCheck(f.name)) {
                     const subfolder = getSubfolderState(f, candidates);
                     results.push({
                         campaign_name: slug,
