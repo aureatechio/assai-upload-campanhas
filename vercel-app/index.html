@@ -438,6 +438,22 @@
     let adminPassword = '';
     let selectedLoginRole = '';
     let appConfig = {};
+
+    // ── Session persistence (survives page refresh) ──────────────────
+    function saveSession() {
+        const session = { role: selectedLoginRole, adminPassword, adminAuthorized };
+        sessionStorage.setItem('assai_session', JSON.stringify(session));
+    }
+    function clearSession() {
+        sessionStorage.removeItem('assai_session');
+    }
+    function restoreSession() {
+        try {
+            const raw = sessionStorage.getItem('assai_session');
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch { return null; }
+    }
     let campaignFiles = [];       // files from folder selection
     let campaignName = '';        // detected campaign name
     let campaignSlug = '';
@@ -1084,6 +1100,7 @@
             if (data.authorized) {
                 adminAuthorized = true;
                 adminPassword = pwd;
+                saveSession();
                 envToggle.checked = true;
                 updateEnvUI();
                 bootstrap.Modal.getInstance($('adminPasswordModal')).hide();
@@ -1854,6 +1871,7 @@
             const data = await res.json();
             if (data.authorized) {
                 if (selectedLoginRole === 'admin') adminPassword = pwd;
+                saveSession();
                 enterApp(selectedLoginRole);
             } else {
                 errorDiv.textContent = data.message || 'Senha incorreta.';
@@ -1871,6 +1889,7 @@
     });
 
     function logout() {
+        clearSession();
         adminAuthorized = false;
         adminPassword = '';
         selectedLoginRole = '';
@@ -1902,6 +1921,17 @@
         $('folderNameDisplay').textContent = 'Nenhuma pasta selecionada';
         alertContainer.innerHTML = '';
     }
+
+    // ── Auto-restore session on page load ───────────────────────────
+    (function() {
+        const session = restoreSession();
+        if (session && session.role) {
+            selectedLoginRole = session.role;
+            adminPassword = session.adminPassword || '';
+            adminAuthorized = session.adminAuthorized || false;
+            enterApp(session.role);
+        }
+    })();
 
     </script>
 </body>
