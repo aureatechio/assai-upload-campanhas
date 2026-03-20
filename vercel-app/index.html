@@ -534,9 +534,14 @@
     }
 
     // ── Folder scanning (browser File API) ────────────────────────────
-    // Normalize folder names: trim, NFC normalize, strip zero-width chars
+    // Normalize folder names: trim, NFC normalize, strip zero-width chars, normalize spaces
     function normalizeFolderName(name) {
-        return name.normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toUpperCase();
+        return name.normalize('NFC')
+            .replace(/[\u200B-\u200D\uFEFF]/g, '')  // strip zero-width chars
+            .replace(/[\u00A0\u2007\u202F]/g, ' ')   // non-breaking spaces -> regular space
+            .trim()
+            .replace(/\s+/g, ' ')                     // collapse multiple spaces
+            .toUpperCase();
     }
 
     function findFolderFiles(allFiles, candidates) {
