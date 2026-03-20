@@ -549,11 +549,11 @@
     }
 
     function getSubfolderState(file, folderCandidates) {
-        // Returns the subfolder name under the media folder (e.g., NACIONAL, MG)
+        // Returns the subfolder name under the media folder, always UPPERCASE (e.g., NACIONAL, MG)
         const parts = file.webkitRelativePath.split('/');
         // parts: [campaign, CABECA, MG, file.mp4] => state = MG
         if (parts.length >= 4) {
-            return parts[2];
+            return parts[2].toUpperCase();
         }
         return null;
     }
@@ -603,7 +603,7 @@
                 // Only files in the state subfolder
                 for (const f of folderFiles) {
                     const fileState = getSubfolderState(f, candidates);
-                    if (fileState === state && isMediaFile(f.name)) {
+                    if (fileState && fileState === state.toUpperCase() && isMediaFile(f.name)) {
                         results.push({
                             campaign_name: campNameCamel,
                             category, bucket, filename: f.name,
@@ -622,7 +622,7 @@
             if (isImageFile(f.name)) {
                 const fileState = getSubfolderState(f, THUMB_NAMES);
                 const effectiveState = fileState || (f.name.toLowerCase().includes('_mg') ? 'MG' : 'NACIONAL');
-                if (effectiveState === state) {
+                if (effectiveState === state.toUpperCase()) {
                     results.push({
                         campaign_name: campNameCamel,
                         category: 'thumb', bucket: 'thumb',
@@ -702,10 +702,11 @@
 
         const csvData = {};
 
-        // Build thumb URL mapping
+        // Build thumb URL mapping (keys normalised to UPPER for case-insensitive lookup)
         const thumbUrls = {};
         for (const f of (filesByCategory.thumb || [])) {
-            thumbUrls[f.state || ''] = f.url;
+            const key = (f.state || '').toUpperCase();
+            thumbUrls[key] = f.url;
         }
 
         for (const [category, files] of Object.entries(filesByCategory)) {
@@ -766,7 +767,7 @@
         // Campanhas CSV
         const campanhasRows = [];
         if (includeNacional) {
-            const thumbUrl = thumbUrls['NACIONAL'] || thumbUrls['Nacional'] || thumbUrls[''] || Object.values(thumbUrls)[0] || '';
+            const thumbUrl = thumbUrls['NACIONAL'] || thumbUrls[''] || Object.values(thumbUrls)[0] || '';
             campanhasRows.push({
                 ajusteCampanha: 'acelera',
                 ativo: 'sim',
@@ -792,7 +793,7 @@
                 colorLetras: '#d81510',
                 formCelebridade: '',
                 formSelo: '',
-                imagem: thumbUrls[state] || '',
+                imagem: thumbUrls[state.toUpperCase()] || '',
                 option: `${campName.replace(/\b\w/g, c => c.toUpperCase())} ${stateDisplay}`,
                 optionSheet: campNameCamel,
                 'OS materiais': 'Filme de 15s , Filme de 30s , Spot de Rádio 15s , Spot de Rádio 30s',
