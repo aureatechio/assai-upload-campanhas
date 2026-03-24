@@ -145,6 +145,13 @@
             padding: 8px 20px; font-weight: 600; transition: all 0.3s;
         }
         .btn-user-approve:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,110,253,0.4); color: white; }
+        .toggle-password-btn { border-color: #e9ecef; color: #6c757d; }
+        .toggle-password-btn:hover { color: #FF6B35; border-color: #e9ecef; background: #f8f9fa; }
+        .variant-group {
+            padding: 6px 12px; margin: 3px 0; border-radius: 8px;
+            background: #f8f9fa; border: 1px solid #e9ecef; font-size: 0.9rem;
+        }
+        .variant-approved { background: #d1e7dd; border-color: #badbcc; }
         .btn-reopen {
             background: #6c757d; border: none; color: white;
             border-radius: 10px; padding: 8px 16px; font-weight: 600;
@@ -182,7 +189,10 @@
                 <div id="adminLoginForm" class="mt-3">
                     <div class="input-group">
                         <span class="input-group-text" style="border-radius: 10px 0 0 10px;"><i class="fas fa-lock"></i></span>
-                        <input type="password" class="form-control" id="loginPasswordInput" placeholder="Senha" style="border-radius: 0 10px 10px 0;">
+                        <input type="password" class="form-control" id="loginPasswordInput" placeholder="Senha" style="border-radius: 0;">
+                        <button type="button" class="btn btn-outline-secondary toggle-password-btn" data-target="loginPasswordInput" style="border-radius: 0 10px 10px 0; border-left: 0;">
+                            <i class="fas fa-eye"></i>
+                        </button>
                     </div>
                     <div id="loginPasswordError" class="text-danger small mt-2" style="display: none;"></div>
                     <button class="btn btn-danger w-100 mt-3" id="loginAdminBtn" style="border-radius: 10px; font-weight: 600;">
@@ -252,6 +262,26 @@
                 <div id="variantsSection" style="display: none;" class="mb-3">
                     <label class="form-label"><i class="fas fa-map-marker-alt me-2"></i>Variantes a gerar:</label>
                     <div id="variantsList"></div>
+                </div>
+
+                <!-- Color selection -->
+                <div id="colorSection" style="display: none;" class="mb-3">
+                    <label class="form-label"><i class="fas fa-palette me-2"></i>Cor das letras:</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="form-select" id="colorSelect" style="max-width: 280px;">
+                            <option value="" selected disabled>Selecione a cor...</option>
+                            <option value="#d81510" style="color: #d81510; font-weight: 700;">&#9632; Vermelho</option>
+                            <option value="#e70000" style="color: #e70000; font-weight: 700;">&#9632; Vermelho Vivo</option>
+                            <option value="#ffffff" style="color: #000; font-weight: 700;">&#9633; Branco</option>
+                            <option value="#004696" style="color: #004696; font-weight: 700;">&#9632; Azul</option>
+                            <option value="#1A237E" style="color: #1A237E; font-weight: 700;">&#9632; Azul Marinho</option>
+                            <option value="#f9ec0b" style="color: #bfb300; font-weight: 700;">&#9632; Amarelo</option>
+                            <option value="#fdc301" style="color: #c99a00; font-weight: 700;">&#9632; Dourado</option>
+                            <option value="#000000" style="color: #000000; font-weight: 700;">&#9632; Preto</option>
+                            <option value="#7c431d" style="color: #7c431d; font-weight: 700;">&#9632; Marrom</option>
+                        </select>
+                        <span id="colorPreview" class="d-inline-block rounded-circle border" style="width: 28px; height: 28px; min-width: 28px; background: #ccc;"></span>
+                    </div>
                 </div>
 
                 <!-- Action buttons -->
@@ -370,7 +400,12 @@
                 </div>
                 <div class="modal-body">
                     <p class="small text-muted">Informe a senha de admin para desbloquear Bubble PROD.</p>
-                    <input type="password" class="form-control" id="adminPasswordInput" placeholder="Senha admin" style="border-radius: 10px;">
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="adminPasswordInput" placeholder="Senha admin" style="border-radius: 10px 0 0 10px;">
+                        <button type="button" class="btn btn-outline-secondary toggle-password-btn" data-target="adminPasswordInput" style="border-radius: 0 10px 10px 0;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                     <div id="adminPasswordError" class="text-danger small mt-2" style="display: none;"></div>
                 </div>
                 <div class="modal-footer border-0">
@@ -385,6 +420,22 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    // ── Toggle password visibility ──────────────────────────────────
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.toggle-password-btn');
+        if (!btn) return;
+        const input = document.getElementById(btn.dataset.target);
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
     // ── Constants ──────────────────────────────────────────────────────
     const MEDIA_EXTS = ['.mp4', '.mp3', '.wav'];
     const BG_EXTS = ['.mp4', '.png', '.jpg', '.jpeg'];
@@ -454,6 +505,8 @@
             return JSON.parse(raw);
         } catch { return null; }
     }
+    let myCampaignsData = {};     // grouped data for "Minhas Campanhas" variant approval
+    let adminCampaignsData = {};  // grouped data for admin variant approval
     let campaignFiles = [];       // files from folder selection
     let campaignName = '';        // detected campaign name
     let campaignSlug = '';
@@ -547,6 +600,36 @@
 
     function isImageFile(name) {
         return IMAGE_EXTS.includes(getFileExtension(name));
+    }
+
+    // ── Derive variant from a campaign record ───────────────────────
+    function deriveVariantFromRecord(record, baseSlug) {
+        const payload = record.payload || {};
+        const table = record.table_name;
+
+        if (table === 'formCampanha') {
+            const os = payload.optionSheet || '';
+            if (!os || os === baseSlug) return 'NACIONAL';
+            const suffix = os.substring(baseSlug.length);
+            return suffix.toUpperCase() || 'NACIONAL';
+        }
+
+        let campField = payload.ligacaoCampanhaFieldName;
+        if (!campField) return 'NACIONAL';
+
+        if (Array.isArray(campField)) {
+            if (campField.length > 1) return '_COMPARTILHADO';
+            campField = campField[0] || '';
+        }
+
+        if (typeof campField === 'string' && campField.includes(',')) {
+            return '_COMPARTILHADO';
+        }
+
+        const name = String(campField).trim();
+        if (!name || name === baseSlug) return 'NACIONAL';
+        const suffix = name.substring(baseSlug.length);
+        return suffix.toUpperCase() || 'NACIONAL';
     }
 
     // ── Folder scanning (browser File API) ────────────────────────────
@@ -716,7 +799,7 @@
     }
 
     // ── CSV generation (in-browser) ───────────────────────────────────
-    function generateCSVData(allCampaignFiles, campName, selectedStates, includeNacional) {
+    function generateCSVData(allCampaignFiles, campName, selectedStates, includeNacional, selectedColor) {
         const slug = toCamelCase(campName);
         const currentDate = new Date().toLocaleString('en-US', {
             month: 'short', day: '2-digit', year: 'numeric',
@@ -812,7 +895,7 @@
                 ajusteCampanha: 'acelera',
                 ativo: 'sim',
                 categoriaLiberacao: '',
-                colorLetras: '#d81510',
+                colorLetras: selectedColor,
                 formCelebridade: '',
                 formSelo: '',
                 imagem: thumbUrl,
@@ -832,7 +915,7 @@
                 ajusteCampanha: 'acelera',
                 ativo: 'sim',
                 categoriaLiberacao: '',
-                colorLetras: '#d81510',
+                colorLetras: selectedColor,
                 formCelebridade: '',
                 formSelo: '',
                 imagem: stateThumbUrl,
@@ -974,6 +1057,145 @@
         return data;
     }
 
+    // ── Bubble search (find existing records) ────────────────────────
+    async function searchBubble(table, constraints, env) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (env === 'prod' && adminPassword) {
+            headers['X-Admin-Password'] = adminPassword;
+        }
+        const res = await fetch('/api/bubble', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ table, action: 'search', constraints, env }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+            throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        return data;
+    }
+
+    // ── Bubble update (patch existing record) ────────────────────────
+    async function updateBubble(table, bubbleId, payload, env) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (env === 'prod' && adminPassword) {
+            headers['X-Admin-Password'] = adminPassword;
+        }
+        const res = await fetch('/api/bubble', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ table, action: 'update', bubble_id: bubbleId, payload, env }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+            throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        return data;
+    }
+
+    // ── Region (diretoria) mapping ──────────────────────────────────
+    const VARIANT_REGION_MAP = {
+        NACIONAL: ['SPPR', 'LESTE', 'CONO', 'NE'],
+        MG: ['LESTE'],
+    };
+
+    function detectVariantFromPayload(optionSheet, baseSlug) {
+        if (!optionSheet || !baseSlug || optionSheet === baseSlug) return 'NACIONAL';
+        const suffix = optionSheet.substring(baseSlug.length);
+        return suffix.toUpperCase() || 'NACIONAL';
+    }
+
+    // Add campaign to the formCampanhas list in the relevant formRegiaos records
+    async function addCampaignToRegions(campaignBubbleId, variant, env) {
+        const regionNames = VARIANT_REGION_MAP[variant];
+        if (!regionNames) return; // Unknown variant, skip
+
+        for (const regionName of regionNames) {
+            try {
+                const searchResult = await searchBubble('formRegiaos', [
+                    { key: 'option', constraint_type: 'equals', value: regionName },
+                ], env);
+
+                const results = searchResult.data?.response?.results || [];
+                if (results.length === 0) {
+                    console.warn(`Diretoria "${regionName}" nao encontrada no Bubble.`);
+                    continue;
+                }
+
+                const region = results[0];
+                const regionId = region._id;
+
+                // Get current campaign list (may be array of IDs or objects)
+                const rawList = region.formCampanhas || [];
+                const currentIds = rawList.map(c => typeof c === 'string' ? c : (c._id || c));
+
+                // Skip if campaign already in the list
+                if (currentIds.includes(campaignBubbleId)) continue;
+
+                // Append and update
+                const updatedList = [...currentIds, campaignBubbleId];
+                await updateBubble('formRegiaos', regionId, { formCampanhas: updatedList }, env);
+            } catch (e) {
+                console.warn(`Erro ao atualizar diretoria ${regionName}:`, e.message);
+            }
+        }
+    }
+
+    // ── Smart send: create or update formCampanha + update regions ───
+    async function sendFormCampanhaSmartly(payload, env, baseSlug) {
+        const optionSheet = payload.optionSheet;
+        if (!optionSheet) {
+            return await sendToBubble('formCampanha', payload, env);
+        }
+
+        let campaignBubbleId = null;
+        let action = 'created';
+
+        // Search for existing campaign by optionSheet
+        try {
+            const searchResult = await searchBubble('formCampanha', [
+                { key: 'optionSheet', constraint_type: 'equals', value: optionSheet },
+            ], env);
+
+            const results = searchResult.data?.response?.results || [];
+
+            if (results.length > 0) {
+                // Campaign exists — update it (image, colorLetras, ativo, etc.)
+                campaignBubbleId = results[0]._id;
+                const updatePayload = {};
+                if (payload.imagem) updatePayload.imagem = payload.imagem;
+                if (payload.colorLetras) updatePayload.colorLetras = payload.colorLetras;
+                if (payload.ativo !== undefined) updatePayload.ativo = payload.ativo;
+                if (payload.option) updatePayload.option = payload.option;
+                if (payload.ajusteCampanha) updatePayload.ajusteCampanha = payload.ajusteCampanha;
+
+                await updateBubble('formCampanha', campaignBubbleId, updatePayload, env);
+                action = 'updated';
+            }
+        } catch (e) {
+            console.warn('Busca no Bubble falhou, criando novo registro:', e.message);
+        }
+
+        // Campaign does not exist — create new
+        if (!campaignBubbleId) {
+            const result = await sendToBubble('formCampanha', payload, env);
+            campaignBubbleId = result.data?.id;
+            action = 'created';
+        }
+
+        // Update regions (diretorias) with this campaign
+        if (campaignBubbleId && baseSlug) {
+            const variant = detectVariantFromPayload(optionSheet, baseSlug);
+            try {
+                await addCampaignToRegions(campaignBubbleId, variant, env);
+            } catch (e) {
+                console.warn('Erro ao atualizar diretorias:', e.message);
+            }
+        }
+
+        return { success: true, data: { id: campaignBubbleId }, action };
+    }
+
     // ── Folder selection handler ──────────────────────────────────────
     $('selectFolderBtn').addEventListener('click', () => $('folderInput').click());
 
@@ -1040,8 +1262,24 @@
             variantsSection.style.display = 'none';
         }
 
-        generateBtn.disabled = false;
+        // Show color selector and keep generate disabled until color chosen
+        $('colorSection').style.display = 'block';
+        $('colorSelect').value = '';
+        $('colorPreview').style.background = '#ccc';
+        generateBtn.disabled = true;
         enviarSection.style.display = 'none';
+    });
+
+    // Color select handler
+    $('colorSelect').addEventListener('change', function() {
+        const hex = this.value;
+        $('colorPreview').style.background = hex;
+        if (hex === '#ffffff') {
+            $('colorPreview').style.border = '2px solid #ccc';
+        } else {
+            $('colorPreview').style.border = '2px solid transparent';
+        }
+        generateBtn.disabled = !hex || !campaignFiles.length;
     });
 
     function getSelectedVariants() {
@@ -1132,6 +1370,11 @@
             return;
         }
 
+        if (!$('colorSelect').value) {
+            showAlert('Selecione a cor das letras antes de gerar.', 'warning');
+            return;
+        }
+
         generateBtn.querySelector('.loading').style.display = 'inline';
         generateBtn.querySelector('.normal').style.display = 'none';
         generateBtn.disabled = true;
@@ -1168,7 +1411,8 @@
                 return;
             }
 
-            const result = generateCSVData(allCampaignFiles, campaignName, selectedStates, includeNacional);
+            const selectedColor = $('colorSelect').value;
+            const result = generateCSVData(allCampaignFiles, campaignName, selectedStates, includeNacional, selectedColor);
             generatedCSVData = result.csvData;
 
             // Also store allCampaignFiles for Supabase upload
@@ -1229,7 +1473,7 @@
         } finally {
             generateBtn.querySelector('.loading').style.display = 'none';
             generateBtn.querySelector('.normal').style.display = 'inline';
-            generateBtn.disabled = !campaignFiles.length;
+            generateBtn.disabled = !campaignFiles.length || !$('colorSelect').value;
         }
     });
 
@@ -1349,7 +1593,11 @@
                 const payload = applyOverrides(table, rows[j]);
 
                 try {
-                    await sendToBubble(table, payload, env);
+                    if (table === 'formCampanha') {
+                        await sendFormCampanhaSmartly(payload, env, campaignSlug);
+                    } else {
+                        await sendToBubble(table, payload, env);
+                    }
                     fileSuccess++;
                 } catch (e) {
                     fileFailed++;
@@ -1455,7 +1703,6 @@
         const countBadge = $('myCampaignsCount');
 
         try {
-            // Fetch pending + user_approved campaigns
             const [resPending, resApproved] = await Promise.all([
                 fetch('/api/campaigns?status=pending'),
                 fetch('/api/campaigns?status=user_approved'),
@@ -1467,6 +1714,7 @@
             if (data.length === 0) {
                 list.innerHTML = '<p class="text-muted text-center py-4"><i class="fas fa-inbox me-2"></i>Nenhuma campanha em andamento.</p>';
                 countBadge.style.display = 'none';
+                myCampaignsData = {};
                 return;
             }
 
@@ -1477,7 +1725,6 @@
                     grouped[row.campaign_slug] = {
                         campaign_name: row.campaign_name,
                         campaign_slug: row.campaign_slug,
-                        status: row.status,
                         created_at: row.created_at,
                         user_approved_at: row.user_approved_at,
                         records: [],
@@ -1488,9 +1735,32 @@
                 grouped[row.campaign_slug].tables.add(row.table_name);
             }
 
+            // Derive variants for each campaign
+            for (const slug of Object.keys(grouped)) {
+                const camp = grouped[slug];
+                const variants = {};
+                for (const rec of camp.records) {
+                    const variant = deriveVariantFromRecord(rec, slug);
+                    if (!variants[variant]) variants[variant] = { records: [], pendingIds: [], approvedIds: [] };
+                    variants[variant].records.push(rec);
+                    if (rec.status === 'pending') variants[variant].pendingIds.push(rec.id);
+                    else if (rec.status === 'user_approved') variants[variant].approvedIds.push(rec.id);
+                }
+                camp.variants = variants;
+
+                const variantKeys = Object.keys(variants).filter(v => v !== '_COMPARTILHADO');
+                camp.hasMultipleVariants = variantKeys.length > 1;
+
+                const allApproved = camp.records.every(r => r.status === 'user_approved');
+                const allPending = camp.records.every(r => r.status === 'pending');
+                camp.status = allApproved ? 'user_approved' : (allPending ? 'pending' : 'mixed');
+            }
+
+            myCampaignsData = grouped;
+
             const slugs = Object.keys(grouped);
-            const pendingSlugs = slugs.filter(s => grouped[s].status === 'pending');
-            countBadge.textContent = pendingSlugs.length || slugs.length;
+            const actionableSlugs = slugs.filter(s => grouped[s].status !== 'user_approved');
+            countBadge.textContent = actionableSlugs.length || slugs.length;
             countBadge.style.display = 'inline';
 
             let html = '';
@@ -1498,41 +1768,122 @@
                 const camp = grouped[slug];
                 const dateStr = new Date(camp.created_at).toLocaleString('pt-BR');
                 const tablesHtml = [...camp.tables].map(t => `<span class="table-badge">${t}</span>`).join(' ');
-                const isPending = camp.status === 'pending';
-                const isUserApproved = camp.status === 'user_approved';
 
-                const statusLabel = isPending
-                    ? '<span class="badge status-badge-pending">Em teste</span>'
-                    : '<span class="badge status-badge-user-approved">Versao aprovada</span>';
+                const variantKeys = Object.keys(camp.variants).filter(v => v !== '_COMPARTILHADO');
+                const sharedVariant = camp.variants['_COMPARTILHADO'];
+                const sharedCount = sharedVariant ? sharedVariant.records.length : 0;
 
-                let buttonsHtml = '';
-                if (isPending) {
-                    buttonsHtml = `
-                        <button class="btn btn-user-approve btn-sm" onclick="userApproveCampaign('${slug}')">
-                            <i class="fas fa-check-double me-1"></i>Aprovar Versao
-                        </button>`;
-                } else if (isUserApproved) {
+                let statusLabel, contentHtml = '';
+
+                if (camp.status === 'user_approved') {
+                    // All approved
+                    statusLabel = '<span class="badge status-badge-user-approved">Versao aprovada</span>';
                     const approvedDate = camp.user_approved_at ? new Date(camp.user_approved_at).toLocaleString('pt-BR') : '';
-                    buttonsHtml = `
-                        <small class="text-muted d-block mb-1">Aprovada em ${approvedDate}</small>
-                        <button class="btn btn-reopen btn-sm" onclick="reopenCampaign('${slug}')">
-                            <i class="fas fa-undo me-1"></i>Reabrir para Teste
-                        </button>`;
+                    contentHtml = `
+                        <div class="text-end">
+                            <small class="text-muted d-block mb-1">Aprovada em ${approvedDate}</small>
+                            <button class="btn btn-reopen btn-sm" onclick="reopenCampaign('${slug}')">
+                                <i class="fas fa-undo me-1"></i>Reabrir para Teste
+                            </button>
+                        </div>`;
+
+                } else if (!camp.hasMultipleVariants) {
+                    // Single variant - simple UI
+                    statusLabel = '<span class="badge status-badge-pending">Em teste</span>';
+                    contentHtml = `
+                        <div class="text-end">
+                            <button class="btn btn-user-approve btn-sm" onclick="userApproveCampaign('${slug}')">
+                                <i class="fas fa-check-double me-1"></i>Aprovar Versao
+                            </button>
+                        </div>`;
+
+                } else {
+                    // Multiple variants - per-variant UI
+                    statusLabel = camp.status === 'mixed'
+                        ? '<span class="badge bg-info text-dark">Aprovacao parcial</span>'
+                        : '<span class="badge status-badge-pending">Em teste</span>';
+
+                    let variantsHtml = '<div class="mt-2 mb-2">';
+                    variantsHtml += '<small class="text-muted d-block mb-1"><i class="fas fa-layer-group me-1"></i>Variantes:</small>';
+
+                    for (const vKey of variantKeys) {
+                        const v = camp.variants[vKey];
+                        const isFullyApproved = v.pendingIds.length === 0 && v.approvedIds.length > 0;
+
+                        if (isFullyApproved) {
+                            variantsHtml += `
+                                <div class="variant-group variant-approved">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    <strong>${vKey}</strong>
+                                    <small class="text-muted">(${v.records.length} registros)</small>
+                                    <span class="badge status-badge-user-approved ms-1">Aprovada</span>
+                                </div>`;
+                        } else {
+                            variantsHtml += `
+                                <div class="variant-group">
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input variant-approve-check" type="checkbox"
+                                            id="va_${slug}_${vKey}" value="${vKey}" data-slug="${slug}" checked>
+                                        <label class="form-check-label" for="va_${slug}_${vKey}">
+                                            <strong>${vKey}</strong>
+                                            <small class="text-muted">(${v.records.length} registros)</small>
+                                        </label>
+                                    </div>
+                                </div>`;
+                        }
+                    }
+
+                    if (sharedCount > 0) {
+                        const sharedAllApproved = sharedVariant.pendingIds.length === 0;
+                        const sharedIcon = sharedAllApproved
+                            ? '<i class="fas fa-check-circle text-success me-1"></i>'
+                            : '<i class="fas fa-share-alt me-1"></i>';
+                        variantsHtml += `<small class="text-muted d-block mt-1 ms-2">${sharedIcon}${sharedCount} registros compartilhados (Trilha) — incluidos automaticamente</small>`;
+                    }
+                    variantsHtml += '</div>';
+
+                    const hasPendingVariants = variantKeys.some(vKey => camp.variants[vKey].pendingIds.length > 0);
+
+                    if (hasPendingVariants) {
+                        contentHtml = `
+                            <div class="w-100 mt-1">
+                                ${variantsHtml}
+                                <button class="btn btn-user-approve btn-sm" onclick="userApproveSelectedVariants('${slug}')">
+                                    <i class="fas fa-check-double me-1"></i>Aprovar Selecionadas
+                                </button>
+                            </div>`;
+                    } else {
+                        contentHtml = `
+                            <div class="text-end">
+                                <button class="btn btn-reopen btn-sm" onclick="reopenCampaign('${slug}')">
+                                    <i class="fas fa-undo me-1"></i>Reabrir para Teste
+                                </button>
+                            </div>`;
+                    }
                 }
 
-                html += `
-                <div class="approval-card" id="mycamp-${slug}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="campaign-title">${camp.campaign_name} ${statusLabel}</div>
-                            <div class="campaign-meta">Slug: <strong>${slug}</strong> | ${camp.records.length} registros | ${dateStr}</div>
-                            <div class="mt-1">${tablesHtml}</div>
+                // Use different layout for multi-variant vs single
+                if (camp.hasMultipleVariants && camp.status !== 'user_approved') {
+                    html += `
+                    <div class="approval-card" id="mycamp-${slug}">
+                        <div class="campaign-title">${camp.campaign_name} ${statusLabel}</div>
+                        <div class="campaign-meta">Slug: <strong>${slug}</strong> | ${camp.records.length} registros | ${dateStr}</div>
+                        <div class="mt-1">${tablesHtml}</div>
+                        ${contentHtml}
+                    </div>`;
+                } else {
+                    html += `
+                    <div class="approval-card" id="mycamp-${slug}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="campaign-title">${camp.campaign_name} ${statusLabel}</div>
+                                <div class="campaign-meta">Slug: <strong>${slug}</strong> | ${camp.records.length} registros | ${dateStr}</div>
+                                <div class="mt-1">${tablesHtml}</div>
+                            </div>
+                            ${contentHtml}
                         </div>
-                        <div class="text-end">
-                            ${buttonsHtml}
-                        </div>
-                    </div>
-                </div>`;
+                    </div>`;
+                }
             }
 
             list.innerHTML = html;
@@ -1559,6 +1910,55 @@
             await loadMyCampaigns();
         } catch (err) {
             showAlert('Erro ao aprovar versao: ' + err.message, 'danger');
+        }
+    }
+
+    // ── User approve selected variants ────────────────────────────
+    async function userApproveSelectedVariants(slug) {
+        const camp = myCampaignsData[slug];
+        if (!camp) return;
+
+        // Get checked variants from the checkboxes
+        const checkboxes = document.querySelectorAll(`.variant-approve-check[data-slug="${slug}"]`);
+        const selectedVariants = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+        if (selectedVariants.length === 0) {
+            showAlert('Selecione ao menos uma variante para aprovar.', 'warning');
+            return;
+        }
+
+        const label = selectedVariants.join(', ');
+        if (!confirm(`Aprovar variante(s) "${label}" da campanha "${slug}"?\n\nApos aprovacao, estas variantes nao poderao ser re-enviadas ate que o admin processe ou voce reabra para teste.`)) return;
+
+        // Collect record IDs for selected variants + shared records still pending
+        const idsToApprove = [];
+        for (const vKey of selectedVariants) {
+            const v = camp.variants[vKey];
+            if (v) idsToApprove.push(...v.pendingIds);
+        }
+
+        // Include shared records (trilha) if any are still pending
+        const shared = camp.variants['_COMPARTILHADO'];
+        if (shared) idsToApprove.push(...shared.pendingIds);
+
+        if (idsToApprove.length === 0) {
+            showAlert('Nenhum registro pendente encontrado para as variantes selecionadas.', 'warning');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/campaigns', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ record_ids: idsToApprove, status: 'user_approved' }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Erro ao aprovar');
+
+            showAlert(`<i class="fas fa-check-double me-1"></i>Variante(s) "<strong>${label}</strong>" da campanha "<strong>${slug}</strong>" aprovada(s)! Aguardando aprovacao do admin para PROD.`, 'success');
+            await loadMyCampaigns();
+        } catch (err) {
+            showAlert('Erro ao aprovar variante(s): ' + err.message, 'danger');
         }
     }
 
@@ -1595,6 +1995,7 @@
             if (!Array.isArray(data) || data.length === 0) {
                 approvalList.innerHTML = '<p class="text-muted text-center py-4"><i class="fas fa-check-circle me-2"></i>Nenhuma campanha aguardando aprovacao.</p>';
                 pendingCountBadge.style.display = 'none';
+                adminCampaignsData = {};
                 return;
             }
 
@@ -1615,6 +2016,23 @@
                 grouped[row.campaign_slug].tables.add(row.table_name);
             }
 
+            // Derive variants for admin view
+            for (const slug of Object.keys(grouped)) {
+                const camp = grouped[slug];
+                const variants = {};
+                for (const rec of camp.records) {
+                    const variant = deriveVariantFromRecord(rec, slug);
+                    if (!variants[variant]) variants[variant] = { records: [], ids: [] };
+                    variants[variant].records.push(rec);
+                    variants[variant].ids.push(rec.id);
+                }
+                camp.variants = variants;
+                const variantKeys = Object.keys(variants).filter(v => v !== '_COMPARTILHADO');
+                camp.hasMultipleVariants = variantKeys.length > 1;
+            }
+
+            adminCampaignsData = grouped;
+
             const slugs = Object.keys(grouped);
             pendingCountBadge.textContent = slugs.length;
             pendingCountBadge.style.display = 'inline';
@@ -1626,6 +2044,38 @@
                 const approvedStr = camp.user_approved_at ? new Date(camp.user_approved_at).toLocaleString('pt-BR') : '';
                 const tablesHtml = [...camp.tables].map(t => `<span class="table-badge">${t}</span>`).join(' ');
 
+                const variantKeys = Object.keys(camp.variants).filter(v => v !== '_COMPARTILHADO');
+                const sharedVariant = camp.variants['_COMPARTILHADO'];
+                const sharedCount = sharedVariant ? sharedVariant.records.length : 0;
+
+                let variantsInfoHtml = '';
+                if (camp.hasMultipleVariants) {
+                    variantsInfoHtml = '<div class="mt-2 mb-1"><small class="text-muted"><i class="fas fa-layer-group me-1"></i>Variantes aprovadas pelo user:</small>';
+                    for (const vKey of variantKeys) {
+                        const v = camp.variants[vKey];
+                        variantsInfoHtml += `
+                            <div class="variant-group variant-approved">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input admin-variant-check" type="checkbox"
+                                        id="adm_${slug}_${vKey}" value="${vKey}" data-slug="${slug}" checked>
+                                    <label class="form-check-label" for="adm_${slug}_${vKey}">
+                                        <strong>${vKey}</strong>
+                                        <small class="text-muted">(${v.records.length} registros)</small>
+                                    </label>
+                                </div>
+                            </div>`;
+                    }
+                    if (sharedCount > 0) {
+                        variantsInfoHtml += `<small class="text-muted d-block mt-1 ms-2"><i class="fas fa-share-alt me-1"></i>${sharedCount} registros compartilhados (Trilha) — incluidos automaticamente</small>`;
+                    }
+                    variantsInfoHtml += '</div>';
+                }
+
+                const approveLabel = camp.hasMultipleVariants ? 'Publicar Selecionadas' : 'Publicar PROD';
+                const approveOnclick = camp.hasMultipleVariants
+                    ? `approveCampaignVariants('${slug}')`
+                    : `approveCampaign('${slug}')`;
+
                 html += `
                 <div class="approval-card" id="approval-${slug}">
                     <div class="d-flex justify-content-between align-items-start">
@@ -1634,10 +2084,11 @@
                             <div class="campaign-meta">Slug: <strong>${slug}</strong> | ${camp.records.length} registros</div>
                             <div class="campaign-meta">Enviado: ${dateStr}${approvedStr ? ' | Aprovado pelo user: ' + approvedStr : ''}</div>
                             <div class="mt-1">${tablesHtml}</div>
+                            ${variantsInfoHtml}
                         </div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-approve btn-sm" onclick="approveCampaign('${slug}')">
-                                <i class="fas fa-check me-1"></i>Publicar PROD
+                            <button class="btn btn-approve btn-sm" onclick="${approveOnclick}">
+                                <i class="fas fa-check me-1"></i>${approveLabel}
                             </button>
                             <button class="btn btn-reject btn-sm" onclick="rejectCampaign('${slug}')">
                                 <i class="fas fa-times me-1"></i>Rejeitar
@@ -1697,7 +2148,11 @@
                 currentItem.textContent = `Enviando: ${rec.table_name} (${i + 1}/${records.length})`;
 
                 try {
-                    await sendToBubble(rec.table_name, rec.payload, 'prod');
+                    if (rec.table_name === 'formCampanha') {
+                        await sendFormCampanhaSmartly(rec.payload, 'prod', slug);
+                    } else {
+                        await sendToBubble(rec.table_name, rec.payload, 'prod');
+                    }
                     success++;
                 } catch (e) {
                     failed++;
@@ -1752,6 +2207,120 @@
             stageLabel.innerHTML = '<i class="fas fa-times-circle me-1 text-danger"></i>Erro na aprovacao';
             currentItem.textContent = err.message;
             showAlert('Erro ao aprovar campanha: ' + err.message, 'danger');
+        }
+    }
+
+    // ── Approve campaign variants (admin selects which to publish) ──
+    async function approveCampaignVariants(slug) {
+        const camp = adminCampaignsData[slug];
+        if (!camp) return;
+
+        const checkboxes = document.querySelectorAll(`.admin-variant-check[data-slug="${slug}"]`);
+        const selectedVariants = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+        if (selectedVariants.length === 0) {
+            showAlert('Selecione ao menos uma variante para publicar.', 'warning');
+            return;
+        }
+
+        const label = selectedVariants.join(', ');
+
+        // Collect record IDs for selected variants + shared
+        const recordIds = [];
+        for (const vKey of selectedVariants) {
+            const v = camp.variants[vKey];
+            if (v) recordIds.push(...v.ids);
+        }
+        const shared = camp.variants['_COMPARTILHADO'];
+        if (shared) recordIds.push(...shared.ids);
+
+        // Filter records to only selected ones
+        const records = camp.records.filter(r => recordIds.includes(r.id));
+
+        if (!confirm(`Publicar variante(s) "${label}" da campanha "${slug}" no Bubble PROD? (${records.length} registros)`)) return;
+
+        const progressCard = $('approvalProgressCard');
+        const progressBar = $('approvalProgressBar');
+        const currentItem = $('approvalCurrentItem');
+        const stageLabel = $('approvalStageLabel');
+        const resultInfo = $('approvalResultInfo');
+
+        progressCard.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+        progressBar.classList.add('progress-bar-animated');
+        stageLabel.innerHTML = `<i class="fas fa-cloud-upload-alt me-1"></i>Enviando variante(s) ${label} para Bubble PROD...`;
+        stageLabel.className = 'stage-label';
+        currentItem.textContent = 'Enviando registros...';
+        resultInfo.innerHTML = '';
+
+        const card = $(`approval-${slug}`);
+        if (card) card.querySelectorAll('button').forEach(b => b.disabled = true);
+
+        try {
+            let success = 0, failed = 0;
+            const errors = [];
+
+            for (let i = 0; i < records.length; i++) {
+                const rec = records[i];
+                currentItem.textContent = `Enviando: ${rec.table_name} (${i + 1}/${records.length})`;
+
+                try {
+                    if (rec.table_name === 'formCampanha') {
+                        await sendFormCampanhaSmartly(rec.payload, 'prod', slug);
+                    } else {
+                        await sendToBubble(rec.table_name, rec.payload, 'prod');
+                    }
+                    success++;
+                } catch (e) {
+                    failed++;
+                    if (errors.length < 10) errors.push(`${rec.table_name}: ${e.message}`);
+                }
+
+                const pct = Math.round(((i + 1) / records.length) * 100);
+                progressBar.style.width = pct + '%';
+                progressBar.textContent = pct + '%';
+
+                let info = `<span class="text-success">${success} enviados</span>`;
+                if (failed > 0) info += ` | <span class="text-danger">${failed} falhas</span>`;
+                resultInfo.innerHTML = info;
+
+                if (i < records.length - 1) await new Promise(r => setTimeout(r, 200));
+            }
+
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.style.width = '100%';
+            progressBar.textContent = '100%';
+
+            if (failed > 0) {
+                stageLabel.innerHTML = '<i class="fas fa-exclamation-triangle me-1 text-warning"></i>Concluido com falhas';
+                currentItem.textContent = `${success} enviados, ${failed} falhas`;
+                if (errors.length > 0) {
+                    resultInfo.innerHTML += `<div class="text-danger small mt-1">${errors.slice(0, 5).join('<br>')}</div>`;
+                }
+                showAlert(`Aprovacao parcial: ${success}/${records.length} registros enviados ao Bubble PROD.`, 'warning');
+            } else {
+                // Mark only these records as published
+                await fetch('/api/campaigns', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Password': adminPassword,
+                    },
+                    body: JSON.stringify({ record_ids: recordIds, status: 'published' }),
+                });
+
+                stageLabel.className = 'stage-label stage-done';
+                stageLabel.innerHTML = '<i class="fas fa-check-circle me-1"></i>Aprovacao concluida!';
+                currentItem.textContent = `Variante(s) ${label}: ${success} registros enviados ao Bubble PROD!`;
+                showAlert(`Variante(s) "${label}" da campanha "${slug}" publicadas no Bubble PROD! (${success} registros)`, 'success');
+
+                await loadPendingCampaigns();
+            }
+        } catch (err) {
+            stageLabel.innerHTML = '<i class="fas fa-times-circle me-1 text-danger"></i>Erro na aprovacao';
+            currentItem.textContent = err.message;
+            showAlert('Erro ao aprovar variante(s): ' + err.message, 'danger');
         }
     }
 
@@ -1916,6 +2485,9 @@
         // Reset to upload tab
         const uploadTabEl = $('uploadTab');
         if (uploadTabEl) new bootstrap.Tab(uploadTabEl).show();
+        $('colorSection').style.display = 'none';
+        $('colorSelect').value = '';
+        $('colorPreview').style.background = '#ccc';
         $('foldersSection').style.display = 'none';
         $('variantsSection').style.display = 'none';
         $('folderNameDisplay').textContent = 'Nenhuma pasta selecionada';

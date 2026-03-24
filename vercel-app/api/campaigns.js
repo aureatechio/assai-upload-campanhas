@@ -61,9 +61,12 @@ export default async function handler(req, res) {
   // user_approved: user can set (pending → user_approved), no admin password needed
   // published/rejected: admin only (user_approved → published/rejected)
   if (req.method === 'PATCH') {
-    const { campaign_slug, status: newStatus } = req.body || {};
-    if (!campaign_slug || !newStatus) {
-      return res.status(400).json({ error: 'campaign_slug e status obrigatorios.' });
+    const { campaign_slug, status: newStatus, record_ids } = req.body || {};
+    if (!newStatus) {
+      return res.status(400).json({ error: 'status obrigatorio.' });
+    }
+    if (!campaign_slug && (!record_ids || !Array.isArray(record_ids) || record_ids.length === 0)) {
+      return res.status(400).json({ error: 'campaign_slug ou record_ids obrigatorio.' });
     }
 
     const allowed = ['user_approved', 'published', 'rejected', 'pending'];
@@ -94,7 +97,13 @@ export default async function handler(req, res) {
       updateBody.approved_at = new Date().toISOString();
     }
 
-    const url = `${restBase}?campaign_slug=eq.${encodeURIComponent(campaign_slug)}&status=eq.${fromStatus}`;
+    let url;
+    if (record_ids && Array.isArray(record_ids) && record_ids.length > 0) {
+      const ids = record_ids.map(id => encodeURIComponent(id)).join(',');
+      url = `${restBase}?id=in.(${ids})&status=eq.${fromStatus}`;
+    } else {
+      url = `${restBase}?campaign_slug=eq.${encodeURIComponent(campaign_slug)}&status=eq.${fromStatus}`;
+    }
 
     try {
       const r = await fetch(url, {
