@@ -399,6 +399,16 @@
                 variantsList.innerHTML = '';
                 const variantLabels = { 'nacional': 'Nacional' };
 
+                // Normalize to uppercase and deduplicate (handles "MG" vs "mg" from different folders)
+                const seenKeys = new Set();
+                data.variants = data.variants.filter(v => {
+                    const key = v.trim().toLowerCase();
+                    if (seenKeys.has(key)) return false;
+                    seenKeys.add(key);
+                    return true;
+                }).map(v => v === 'nacional' ? v : v.trim().toUpperCase());
+                data.states = data.variants.filter(v => v !== 'nacional');
+
                 const onlyNacional = data.states.length === 0;
 
                 data.variants.forEach(variant => {
