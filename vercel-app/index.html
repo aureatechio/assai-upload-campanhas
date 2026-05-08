@@ -873,6 +873,17 @@
                 }
             }
 
+            // Sort trilha rows by duration (33S > 30S > 15S) descending
+            if (category === 'trilha' && rows.length > 1) {
+                rows.sort((a, b) => {
+                    const extract = (name) => {
+                        const m = name.match(/(\d+)\s*s/i);
+                        return m ? parseInt(m[1], 10) : 0;
+                    };
+                    return extract(b.nameFile) - extract(a.nameFile);
+                });
+            }
+
             if (rows.length > 0) {
                 const suffix = CATEGORY_TO_FILE_SUFFIX[category] || category;
                 const csvFilename = `export_All-${suffix}-${slug}.csv`;
